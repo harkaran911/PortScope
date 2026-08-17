@@ -1,0 +1,123 @@
+{% extends "scanner/base.html" %}
+{% block title %}Scan History{% endblock %}
+{% block nav_history %}active{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'index' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-sep">›</span>
+<span class="breadcrumb-item active">History</span>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-title-row">
+  <h1 class="page-title">Scan History</h1>
+  <a href="{% url 'index' %}" class="btn btn-primary">+ New Scan</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="filter-bar">
+      <input type="text" id="histFilter" class="filter-input" placeholder="Search by target, IP…" />
+      <select id="histStatus" class="filter-select">
+        <option value="">All Status</option>
+        <option value="completed">Completed</option>
+        <option value="running">Running</option>
+        <option value="failed">Failed</option>
+      </select>
+    </div>
+  </div>
+
+  {% if scans %}
+  <div class="table-wrap">
+    <table class="data-table" id="histTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Target</th>
+          <th>Type</th>
+          <th>Open</th>
+          <th>Closed</th>
+          <th>Filtered</th>
+          <th>Risk</th>
+          <th>Status</th>
+          <th>Duration</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for scan in scans %}
+        <tr class="table-row hist-row" data-status="{{ scan.status }}" data-target="{{ scan.target|lower }}">
+          <td class="dim mono">{{ scan.pk }}</td>
+          <td>
+            <div class="target-cell">
+              <span class="target-name">{{ scan.target }}</span>
+              {% if scan.resolved_ip and scan.resolved_ip != scan.target %}
+              <span class="target-ip">{{ scan.resolved_ip }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td><span class="badge badge-outline">{{ scan.get_scan_type_display }}</span></td>
+          <td class="accent mono">{{ scan.open_ports_count }}</td>
+          <td class="dim mono">{{ scan.closed_ports_count }}</td>
+          <td class="dim mono">{{ scan.filtered_ports_count }}</td>
+          <td><span class="risk-badge risk-{{ scan.risk_color }}">{{ scan.risk_label }}</span></td>
+          <td>
+            <span class="status-pill status-{{ scan.status }}">
+              {% if scan.status == "running" %}<span class="pulse-dot"></span>{% endif %}
+              {{ scan.status|title }}
+            </span>
+          </td>
+          <td class="mono dim">{% if scan.duration_seconds %}{{ scan.duration_seconds|floatformat:1 }}s{% else %}—{% endif %}</td>
+          <td class="mono dim">{{ scan.created_at|date:"M d, Y H:i" }}</td>
+          <td>
+            <div class="action-btns">
+              <a href="{% url 'scan_detail' scan.pk %}" class="btn btn-sm btn-ghost">View</a>
+              {% if scan.status == "completed" %}
+              <a href="{% url 'report' scan.pk %}" class="btn btn-sm btn-ghost">Report</a>
+              {% endif %}
+              <button class="btn btn-sm btn-danger-ghost" onclick="delScan({{ scan.pk }}, this)">Del</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2" opacity=".3"/><path d="M20 32h24M32 20v24" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"/></svg>
+    <p>No scans yet. <a href="{% url 'index' %}">Start your first scan →</a></p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const histFilter = document.getElementById('histFilter');
+const histStatus = document.getElementById('histStatus');
+function filterHist() {
+  const t = histFilter.value.toLowerCase();
+  const s = histStatus.value;
+  document.querySelectorAll('.hist-row').forEach(row => {
+    const tMatch = !t || row.dataset.target.includes(t) || row.textContent.toLowerCase().includes(t);
+    const sMatch = !s || row.dataset.status === s;
+    row.style.display = tMatch && sMatch ? '' : 'none';
+  });
+}
+if (histFilter) histFilter.addEventListener('input', filterHist);
+if (histStatus) histStatus.addEventListener('change', filterHist);
+
+function delScan(id, btn) {
+  if (!confirm('Delete scan #' + id + '?')) return;
+  fetch(`/scan/${id}/delete/`, {method:'POST', headers:{'X-CSRFToken': getCsrf()}})
+    .then(()=>{ btn.closest('tr').remove(); });
+}
+function getCsrf() {
+  return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+</script>
+{% endblock %}

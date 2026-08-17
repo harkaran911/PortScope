@@ -1,0 +1,271 @@
+{% extends "scanner/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero stats ─────────────────────────────────────────────────────────── -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-blue">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.total_scans }}</div>
+      <div class="stat-label">Total Scans</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-green">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"/></svg>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.completed }}</div>
+      <div class="stat-label">Completed</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-yellow">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.5a.75.75 0 01-1.5 0V3.75A.75.75 0 0110 3zm-3.5 8a.75.75 0 01.75.75v.5a.75.75 0 01-1.5 0v-.5A.75.75 0 016.5 11zm7 0a.75.75 0 01.75.75v.5a.75.75 0 01-1.5 0v-.5a.75.75 0 01.75-.75z"/></svg>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.running }}</div>
+      <div class="stat-label">Running</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-red">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"/></svg>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.critical_finds }}</div>
+      <div class="stat-label">Critical Risk</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Scan form ──────────────────────────────────────────────────────────── -->
+<div class="card scan-card">
+  <div class="card-header">
+    <h2 class="card-title">
+      <svg viewBox="0 0 20 20" fill="currentColor" class="title-icon"><path d="M10 .5a9.5 9.5 0 100 19A9.5 9.5 0 0010 .5zm0 2a7.5 7.5 0 110 15 7.5 7.5 0 010-15z"/><path d="M13.5 10a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zm-3.5 1.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
+      New Scan
+    </h2>
+    <p class="card-subtitle">TCP connect scan · Banner grabbing · Service detection · Risk analysis</p>
+  </div>
+
+  <form id="scanForm" class="scan-form">
+    {% csrf_token %}
+
+    <div class="form-row">
+      <div class="form-group flex-2">
+        <label class="form-label">Target Host / IP</label>
+        <div class="input-icon-wrap">
+          <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14a6 6 0 110-12 6 6 0 010 12zm0-9a3 3 0 100 6 3 3 0 000-6z"/></svg>
+          <input type="text" id="target" name="target" class="form-control" placeholder="e.g. scanme.nmap.org  or  192.168.1.1" required />
+        </div>
+      </div>
+      <div class="form-group flex-1">
+        <label class="form-label">Scan Profile</label>
+        <select id="scan_type" name="scan_type" class="form-control">
+          <option value="quick">⚡ Quick (20 ports)</option>
+          <option value="common" selected>🎯 Common (1-1024)</option>
+          <option value="stealth">🔍 Top 1000</option>
+          <option value="vuln">🛡️ Vulnerability Focus</option>
+          <option value="full">💥 Full Scan (1-65535)</option>
+          <option value="custom">⚙️ Custom Range</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row" id="customRow" style="display:none;">
+      <div class="form-group flex-1">
+        <label class="form-label">Custom Ports</label>
+        <input type="text" name="custom_ports" id="custom_ports" class="form-control" placeholder="e.g. 22,80,443,8000-9000" />
+        <span class="form-hint">Comma-separated ports or ranges like 80,443,8000-9000</span>
+      </div>
+    </div>
+
+    <div class="form-row advanced-row">
+      <div class="form-group flex-1">
+        <label class="form-label">Timeout (s)</label>
+        <input type="number" name="timeout" class="form-control" value="1.0" min="0.2" max="5" step="0.1" />
+      </div>
+      <div class="form-group flex-1">
+        <label class="form-label">Threads</label>
+        <input type="number" name="threads" class="form-control" value="150" min="1" max="300" />
+      </div>
+      <div class="form-group flex-2 btn-cell">
+        <button type="submit" class="btn btn-primary btn-scan" id="scanBtn">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 .5a9.5 9.5 0 100 19 9.5 9.5 0 000-19zm0 17A7.5 7.5 0 1110 2.5a7.5 7.5 0 010 15zm0-11.5a4 4 0 100 8 4 4 0 000-8zm0 6a2 2 0 110-4 2 2 0 010 4z"/></svg>
+          Launch Scan
+        </button>
+      </div>
+    </div>
+
+    <!-- Scan types reference -->
+    <div class="scan-types-guide">
+      <div class="guide-item quick">
+        <span class="guide-dot"></span>
+        <b>Quick</b> — 20 highest-risk ports in seconds
+      </div>
+      <div class="guide-item common">
+        <span class="guide-dot"></span>
+        <b>Common</b> — Ports 1–1024 (well-known)
+      </div>
+      <div class="guide-item stealth">
+        <span class="guide-dot"></span>
+        <b>Top 1000</b> — Most commonly open ports
+      </div>
+      <div class="guide-item vuln">
+        <span class="guide-dot"></span>
+        <b>Vuln Focus</b> — Known-risky services only
+      </div>
+      <div class="guide-item full">
+        <span class="guide-dot"></span>
+        <b>Full</b> — All 65535 ports (may take 5–30 min)
+      </div>
+    </div>
+  </form>
+
+  <!-- Progress overlay -->
+  <div id="scanProgress" class="scan-progress-wrap" style="display:none;">
+    <div class="progress-header">
+      <span class="progress-target" id="progressTarget"></span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+      <div class="progress-glow"></div>
+    </div>
+    <div class="progress-stats">
+      <span class="ps-open"><span id="pOpen">0</span> open</span>
+      <span class="ps-closed"><span id="pClosed">0</span> closed</span>
+      <span class="ps-filtered"><span id="pFiltered">0</span> filtered</span>
+    </div>
+    <div class="scan-radar">
+      <div class="radar-ring r1"></div>
+      <div class="radar-ring r2"></div>
+      <div class="radar-ring r3"></div>
+      <div class="radar-sweep"></div>
+      <div class="radar-center"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Recent scans ───────────────────────────────────────────────────────── -->
+{% if recent_scans %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Recent Scans</h2>
+    <a href="{% url 'history' %}" class="card-link">View All →</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Target</th>
+          <th>Type</th>
+          <th>Open</th>
+          <th>Risk</th>
+          <th>Status</th>
+          <th>Duration</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for scan in recent_scans %}
+        <tr class="table-row" onclick="location.href='{% url 'scan_detail' scan.pk %}'">
+          <td>
+            <div class="target-cell">
+              <span class="target-name">{{ scan.target }}</span>
+              {% if scan.resolved_ip and scan.resolved_ip != scan.target %}
+              <span class="target-ip">{{ scan.resolved_ip }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td><span class="badge badge-outline">{{ scan.get_scan_type_display }}</span></td>
+          <td><span class="open-count">{{ scan.open_ports_count }}</span></td>
+          <td>
+            <span class="risk-badge risk-{{ scan.risk_color }}">
+              {{ scan.risk_label }}
+            </span>
+          </td>
+          <td>
+            <span class="status-pill status-{{ scan.status }}">
+              {% if scan.status == "running" %}<span class="pulse-dot"></span>{% endif %}
+              {{ scan.status|title }}
+            </span>
+          </td>
+          <td class="mono">{% if scan.duration_seconds %}{{ scan.duration_seconds|floatformat:1 }}s{% else %}—{% endif %}</td>
+          <td class="mono dim">{{ scan.created_at|date:"M d H:i" }}</td>
+          <td>
+            <a href="{% url 'scan_detail' scan.pk %}" class="btn btn-sm btn-ghost">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const scanTypeSelect = document.getElementById('scan_type');
+const customRow = document.getElementById('customRow');
+
+scanTypeSelect.addEventListener('change', () => {
+  customRow.style.display = scanTypeSelect.value === 'custom' ? 'flex' : 'none';
+});
+
+document.getElementById('scanForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Launching...';
+
+  const formData = new FormData(form);
+  document.getElementById('progressTarget').textContent = formData.get('target');
+  document.getElementById('scanProgress').style.display = 'block';
+
+  try {
+    const resp = await fetch('/scan/start/', { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (data.error) {
+      alert('Error: ' + data.error);
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 .5a9.5 9.5 0 100 19 9.5 9.5 0 000-19zm0 17A7.5 7.5 0 1110 2.5a7.5 7.5 0 010 15zm0-11.5a4 4 0 100 8 4 4 0 000-8zm0 6a2 2 0 110-4 2 2 0 010 4z"/></svg> Launch Scan';
+      document.getElementById('scanProgress').style.display = 'none';
+      return;
+    }
+    pollStatus(data.session_id);
+  } catch(err) {
+    alert('Network error: ' + err.message);
+    btn.disabled = false;
+    document.getElementById('scanProgress').style.display = 'none';
+  }
+});
+
+function pollStatus(id) {
+  const interval = setInterval(async () => {
+    const resp = await fetch(`/scan/${id}/status/`);
+    const d = await resp.json();
+    const pct = d.progress;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('pOpen').textContent = d.open;
+    document.getElementById('pClosed').textContent = d.closed;
+    document.getElementById('pFiltered').textContent = d.filtered;
+    if (d.status === 'completed' || d.status === 'failed') {
+      clearInterval(interval);
+      window.location.href = `/scan/${id}/`;
+    }
+  }, 800);
+}
+</script>
+{% endblock %}
