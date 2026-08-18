@@ -4,120 +4,101 @@
 {% block breadcrumb %}
 <a href="{% url 'index' %}" class="breadcrumb-item">Dashboard</a>
 <span class="breadcrumb-sep">›</span>
-<a href="{% url 'scan_detail' session.pk %}" class="breadcrumb-item">{{ session.target }}</a>
+<a href="{% url 'scan_detail' session.pk %}" class="breadcrumb-item mono">{{ session.target }}</a>
 <span class="breadcrumb-sep">›</span>
 <span class="breadcrumb-item active">Report</span>
 {% endblock %}
 
 {% block content %}
 
-<div class="report-header">
+<div class="report-hero">
   <div>
-    <h1 class="report-title">Security Scan Report</h1>
-    <p class="report-subtitle">{{ session.target }} &mdash; {{ session.created_at|date:"F j, Y" }}</p>
+    <div class="report-title">Security Report</div>
+    <div class="report-sub">{{ session.target }} &mdash; {{ session.created_at|date:"F j, Y" }}</div>
   </div>
   <div class="report-actions">
     <button class="btn btn-primary" onclick="window.print()">
-      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 4v3H4a2 2 0 00-2 2v5a2 2 0 002 2h1v2a1 1 0 001 1h8a1 1 0 001-1v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a1 1 0 00-1-1H6a1 1 0 00-1 1zm2 0h6v3H7V4zm-1 9h8v4H6v-4zm0-4a1 1 0 110 2 1 1 0 010-2z"/></svg>
-      Print Report
+      <svg viewBox="0 0 14 14" fill="currentColor"><path d="M3 3v2H2a1 1 0 00-1 1v4a1 1 0 001 1h1v2h8v-2h1a1 1 0 001-1V6a1 1 0 00-1-1h-1V3H3zm1 0h6v2H4V3zm0 7h6v2H4v-2zM2 6h10v4H2V6z"/></svg>
+      Print
     </button>
     <a href="{% url 'export_json' session.pk %}" class="btn btn-ghost">Export JSON</a>
-    <a href="{% url 'export_csv' session.pk %}"  class="btn btn-ghost">Export CSV</a>
+    <a href="{% url 'export_csv'  session.pk %}" class="btn btn-ghost">Export CSV</a>
   </div>
 </div>
 
-<!-- ── Executive Summary ──────────────────────────────────────────────────── -->
+<!-- Executive summary -->
 <div class="card">
-  <div class="card-header"><h2 class="card-title">Executive Summary</h2></div>
-  <div class="report-summary">
-    <div class="summary-block">
-      <div class="summary-label">Target</div>
-      <div class="summary-value">{{ session.target }}</div>
-    </div>
-    <div class="summary-block">
-      <div class="summary-label">Resolved IP</div>
-      <div class="summary-value mono">{{ session.resolved_ip|default:"—" }}</div>
-    </div>
-    <div class="summary-block">
-      <div class="summary-label">Scan Type</div>
-      <div class="summary-value">{{ session.get_scan_type_display }}</div>
-    </div>
-    <div class="summary-block">
-      <div class="summary-label">Scan Date</div>
-      <div class="summary-value">{{ session.created_at|date:"N j, Y, g:i a" }}</div>
-    </div>
-    <div class="summary-block">
-      <div class="summary-label">Duration</div>
-      <div class="summary-value">{% if session.duration_seconds %}{{ session.duration_seconds|floatformat:1 }}s{% else %}—{% endif %}</div>
-    </div>
-    <div class="summary-block highlight risk-{{ session.risk_color }}">
-      <div class="summary-label">Overall Risk</div>
-      <div class="summary-value large">{{ session.risk_label }}</div>
-      <div class="summary-sub">Score: {{ session.risk_score|floatformat:1 }}/9.0</div>
+  <div class="card-head"><div class="card-title">Executive Summary</div></div>
+  <div class="summary-grid">
+    <div class="summary-cell"><div class="summary-lbl">Target</div><div class="summary-val">{{ session.target }}</div></div>
+    <div class="summary-cell"><div class="summary-lbl">Resolved IP</div><div class="summary-val mono">{{ session.resolved_ip|default:"—" }}</div></div>
+    <div class="summary-cell"><div class="summary-lbl">Scan Profile</div><div class="summary-val">{{ session.get_scan_type_display }}</div></div>
+    <div class="summary-cell"><div class="summary-lbl">Date</div><div class="summary-val">{{ session.created_at|date:"N j, Y g:i a" }}</div></div>
+    <div class="summary-cell"><div class="summary-lbl">Duration</div><div class="summary-val mono">{% if session.duration_seconds %}{{ session.duration_seconds|floatformat:1 }}s{% else %}—{% endif %}</div></div>
+    <div class="summary-cell"><div class="summary-lbl">Open / Closed / Filtered</div><div class="summary-val mono">{{ session.open_ports_count }} / {{ session.closed_ports_count }} / {{ session.filtered_ports_count }}</div></div>
+    <div class="summary-cell risk-highlight risk-{{ session.risk_color|default:'none' }}">
+      <div class="summary-lbl">Overall Risk</div>
+      <div class="summary-val">{{ session.risk_label }}</div>
+      <div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">Score: {{ session.risk_score|floatformat:1 }} / 9.0</div>
     </div>
   </div>
 </div>
 
-<!-- ── Charts row ─────────────────────────────────────────────────────────── -->
+<!-- Charts -->
 <div class="chart-row">
-  <div class="card chart-card">
-    <div class="card-header"><h2 class="card-title">Port States</h2></div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">Port States</div></div>
     <div class="chart-wrap">
-      <canvas id="stateChart" width="260" height="260"></canvas>
-      <div class="chart-legend" id="stateLegend"></div>
+      <canvas id="stateChart" width="200" height="200"></canvas>
+      <div class="chart-legend" id="stateLeg"></div>
     </div>
   </div>
-
-  <div class="card chart-card">
-    <div class="card-header"><h2 class="card-title">Risk Distribution</h2></div>
+  <div class="card">
+    <div class="card-head"><div class="card-title">Risk Distribution</div></div>
     <div class="chart-wrap">
-      <canvas id="riskChart" width="260" height="260"></canvas>
-      <div class="chart-legend" id="riskLegend"></div>
+      <canvas id="riskChart" width="200" height="200"></canvas>
+      <div class="chart-legend" id="riskLeg"></div>
     </div>
   </div>
-
-  <div class="card chart-card flex-2">
-    <div class="card-header"><h2 class="card-title">Response Time Distribution</h2></div>
-    <canvas id="responseChart" height="120"></canvas>
+  <div class="card">
+    <div class="card-head"><div class="card-title">Response Time (ms) — Top 20 Open</div></div>
+    <div style="padding:16px;">
+      <canvas id="barChart" height="130"></canvas>
+    </div>
   </div>
 </div>
 
-<!-- ── DNS info ───────────────────────────────────────────────────────────── -->
+<!-- DNS -->
 {% if dns_info %}
 <div class="card">
-  <div class="card-header"><h2 class="card-title">Host &amp; DNS</h2></div>
+  <div class="card-head"><div class="card-title">Host &amp; DNS</div></div>
   <div class="info-grid">
-    {% if session.hostname %}<div class="info-item"><span class="info-label">Hostname</span><span class="info-value mono">{{ session.hostname }}</span></div>{% endif %}
-    {% if dns_info.ptr %}<div class="info-item"><span class="info-label">PTR</span><span class="info-value mono">{{ dns_info.ptr }}</span></div>{% endif %}
-    {% if dns_info.a %}<div class="info-item"><span class="info-label">A Records</span><span class="info-value mono">{{ dns_info.a|join:", " }}</span></div>{% endif %}
-    {% if dns_info.aliases %}<div class="info-item"><span class="info-label">Aliases</span><span class="info-value mono">{{ dns_info.aliases|join:", " }}</span></div>{% endif %}
+    {% if session.hostname %}<div class="info-item"><div class="info-lbl">Hostname</div><div class="info-val">{{ session.hostname }}</div></div>{% endif %}
+    {% if dns_info.ptr %}<div class="info-item"><div class="info-lbl">PTR</div><div class="info-val">{{ dns_info.ptr }}</div></div>{% endif %}
+    {% if dns_info.a %}<div class="info-item"><div class="info-lbl">A Records</div><div class="info-val">{{ dns_info.a|join:", " }}</div></div>{% endif %}
+    {% if dns_info.aliases %}<div class="info-item"><div class="info-lbl">Aliases</div><div class="info-val">{{ dns_info.aliases|join:", " }}</div></div>{% endif %}
   </div>
 </div>
 {% endif %}
 
-<!-- ── Findings by severity ───────────────────────────────────────────────── -->
-{% for level, label, color in findings_levels %}
-{% with ports_at_level=open_ports|dictsort:"port" %}
-{% endwith %}
-{% endfor %}
-
+<!-- Critical findings -->
 {% if risk_breakdown.critical > 0 %}
-<div class="card finding-card critical">
-  <div class="card-header">
-    <h2 class="card-title"><span class="severity-badge critical">CRITICAL</span> Findings</h2>
-    <span class="count-badge danger">{{ risk_breakdown.critical }}</span>
+<div class="card finding-card cr">
+  <div class="card-head">
+    <div class="card-title"><span class="sev-badge cr">Critical</span></div>
+    <span class="count-badge">{{ risk_breakdown.critical }}</span>
   </div>
   <div class="table-wrap">
-    <table class="data-table">
+    <table>
       <thead><tr><th>Port</th><th>Service</th><th>Version</th><th>Notes</th><th>CVEs</th></tr></thead>
       <tbody>
         {% for p in open_ports %}{% if p.risk_level == "critical" %}
         <tr>
-          <td><span class="port-number">{{ p.port }}/{{ p.protocol }}</span></td>
+          <td><span class="port-num">{{ p.port }}</span><span class="port-proto">{{ p.protocol }}</span></td>
           <td>{{ p.service }}</td>
-          <td class="mono">{{ p.version|truncatechars:60|default:"—" }}</td>
-          <td class="dim">{{ p.risk_notes }}</td>
-          <td>{% for c in p.cve_hints_list %}<span class="cve-chip">{{ c }}</span>{% empty %}—{% endfor %}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--text-muted);">{{ p.version|truncatechars:50|default:"—" }}</td>
+          <td class="muted" style="font-size:12px;">{{ p.risk_notes }}</td>
+          <td>{% for c in p.cve_hints_list %}<span class="cve-chip">{{ c }}</span>{% empty %}<span class="dim">—</span>{% endfor %}</td>
         </tr>
         {% endif %}{% endfor %}
       </tbody>
@@ -127,21 +108,21 @@
 {% endif %}
 
 {% if risk_breakdown.high > 0 %}
-<div class="card finding-card high">
-  <div class="card-header">
-    <h2 class="card-title"><span class="severity-badge high">HIGH</span> Findings</h2>
-    <span class="count-badge warning">{{ risk_breakdown.high }}</span>
+<div class="card finding-card hi">
+  <div class="card-head">
+    <div class="card-title"><span class="sev-badge hi">High</span></div>
+    <span class="count-badge">{{ risk_breakdown.high }}</span>
   </div>
   <div class="table-wrap">
-    <table class="data-table">
+    <table>
       <thead><tr><th>Port</th><th>Service</th><th>Version</th><th>Notes</th></tr></thead>
       <tbody>
         {% for p in open_ports %}{% if p.risk_level == "high" %}
         <tr>
-          <td><span class="port-number">{{ p.port }}/{{ p.protocol }}</span></td>
+          <td><span class="port-num">{{ p.port }}</span><span class="port-proto">{{ p.protocol }}</span></td>
           <td>{{ p.service }}</td>
-          <td class="mono">{{ p.version|truncatechars:60|default:"—" }}</td>
-          <td class="dim">{{ p.risk_notes }}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--text-muted);">{{ p.version|truncatechars:50|default:"—" }}</td>
+          <td class="muted" style="font-size:12px;">{{ p.risk_notes }}</td>
         </tr>
         {% endif %}{% endfor %}
       </tbody>
@@ -151,21 +132,20 @@
 {% endif %}
 
 {% if risk_breakdown.medium > 0 %}
-<div class="card finding-card medium">
-  <div class="card-header">
-    <h2 class="card-title"><span class="severity-badge medium">MEDIUM</span> Findings</h2>
-    <span class="count-badge info">{{ risk_breakdown.medium }}</span>
+<div class="card finding-card me">
+  <div class="card-head">
+    <div class="card-title"><span class="sev-badge me">Medium</span></div>
+    <span class="count-badge">{{ risk_breakdown.medium }}</span>
   </div>
   <div class="table-wrap">
-    <table class="data-table">
-      <thead><tr><th>Port</th><th>Service</th><th>Version</th><th>Notes</th></tr></thead>
+    <table>
+      <thead><tr><th>Port</th><th>Service</th><th>Notes</th></tr></thead>
       <tbody>
         {% for p in open_ports %}{% if p.risk_level == "medium" %}
         <tr>
-          <td><span class="port-number">{{ p.port }}/{{ p.protocol }}</span></td>
+          <td><span class="port-num">{{ p.port }}</span><span class="port-proto">{{ p.protocol }}</span></td>
           <td>{{ p.service }}</td>
-          <td class="mono">{{ p.version|truncatechars:60|default:"—" }}</td>
-          <td class="dim">{{ p.risk_notes }}</td>
+          <td class="muted" style="font-size:12px;">{{ p.risk_notes }}</td>
         </tr>
         {% endif %}{% endfor %}
       </tbody>
@@ -174,25 +154,23 @@
 </div>
 {% endif %}
 
-<!-- ── All open ports ─────────────────────────────────────────────────────── -->
+<!-- All open ports -->
 <div class="card">
-  <div class="card-header"><h2 class="card-title">All Open Ports</h2></div>
+  <div class="card-head"><div class="card-title">All Open Ports</div></div>
   {% if open_ports %}
   <div class="table-wrap">
-    <table class="data-table">
-      <thead>
-        <tr><th>Port</th><th>Protocol</th><th>Service</th><th>Version / Banner</th><th>Risk</th><th>Response</th><th>HTTP Title</th></tr>
-      </thead>
+    <table>
+      <thead><tr><th>Port</th><th>Proto</th><th>Service</th><th>Version / Banner</th><th>Risk</th><th>Response</th><th>HTTP Title</th></tr></thead>
       <tbody>
         {% for p in open_ports %}
-        <tr>
-          <td class="port-number">{{ p.port }}</td>
-          <td class="mono">{{ p.protocol|upper }}</td>
-          <td>{{ p.service }}</td>
-          <td class="mono">{{ p.version|truncatechars:60|default:p.banner|truncatechars:60|default:"—" }}</td>
-          <td><span class="risk-badge risk-{{ p.risk_level }}">{{ p.risk_level|title }}</span></td>
-          <td class="mono dim">{% if p.response_time_ms %}{{ p.response_time_ms }}ms{% else %}—{% endif %}</td>
-          <td class="dim">{{ p.http_title|default:"—" }}</td>
+        <tr class="port-row risk-{{ p.risk_level }}">
+          <td><span class="port-num">{{ p.port }}</span></td>
+          <td class="mono muted" style="font-size:11px;">{{ p.protocol|upper }}</td>
+          <td style="font-weight:500;">{{ p.service }}</td>
+          <td class="version-text">{{ p.version|truncatechars:55|default:p.banner|truncatechars:55|default:"—" }}</td>
+          <td><span class="badge badge-{{ p.risk_level }}">{{ p.risk_level }}</span></td>
+          <td class="resp-ms">{% if p.response_time_ms %}{{ p.response_time_ms }}ms{% else %}—{% endif %}</td>
+          <td class="muted" style="font-size:12px;">{{ p.http_title|default:"—" }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -207,99 +185,83 @@
 
 {% block extra_js %}
 <script>
-// Inline minimal chart renderer (no external CDN)
-const COLORS = {
-  critical: '#ef4444', high: '#f97316', medium: '#eab308',
-  low: '#22c55e', info: '#64748b', open: '#3b82f6',
-  closed: '#374151', filtered: '#6b7280'
+const C = {
+  critical: '#dc2626', high: '#ea580c', medium: '#ca8a04',
+  low: '#16a34a', info: '#6b7280',
+  open: '#22d3ee', closed: '#1e293b', filtered: '#334155',
 };
 
-function drawDonut(canvasId, legendId, slices) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const cx = W/2, cy = H/2, r = Math.min(W,H)*0.38, inner = r*0.6;
-  let total = slices.reduce((s,x)=>s+x.value,0);
-  if (!total) { ctx.fillStyle='#374151'; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill(); return; }
-  let angle = -Math.PI/2;
-  slices.forEach(s=>{
-    if(!s.value) return;
-    const sweep = (s.value/total)*Math.PI*2;
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,angle,angle+sweep);
-    ctx.closePath();
-    ctx.fillStyle = s.color;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,inner,angle,angle+sweep);
-    ctx.closePath();
-    ctx.fillStyle = '#0f172a';
-    ctx.fill();
-    angle += sweep;
+function drawDonut(id, legId, slices) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, cx = W/2, cy = H/2;
+  const r = Math.min(W,H) * 0.4, inner = r * 0.62;
+  let total = slices.reduce((s,x) => s + x.v, 0);
+  if (!total) { ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill(); return; }
+  let a = -Math.PI/2;
+  slices.forEach(s => {
+    if (!s.v) return;
+    const sw = (s.v/total) * Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a,a+sw); ctx.closePath();
+    ctx.fillStyle = s.c; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,inner,a,a+sw); ctx.closePath();
+    ctx.fillStyle = '#0b0b0b'; ctx.fill();
+    a += sw;
   });
-  // Center text
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = `bold ${r*0.4}px monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#f0f0f0';
+  ctx.font = `bold ${Math.round(r*0.38)}px 'Syne', sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(total, cx, cy);
-  // Legend
-  const leg = document.getElementById(legendId);
-  if (leg) leg.innerHTML = slices.filter(s=>s.value).map(s=>`
-    <div class="leg-item"><span class="leg-dot" style="background:${s.color}"></span>${s.label}: <b>${s.value}</b></div>
-  `).join('');
+  const leg = document.getElementById(legId);
+  if (leg) leg.innerHTML = slices.filter(s=>s.v).map(s =>
+    `<div class="leg-item"><span class="leg-dot" style="background:${s.c}"></span>${s.label}: <b>${s.v}</b></div>`
+  ).join('');
 }
 
-function drawBar(canvasId, labels, values, colors) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width || canvas.offsetWidth, H = canvas.height || 120;
-  canvas.width = W; canvas.height = H;
+function drawBar(id, labels, values, colors) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const W = cv.offsetWidth || 400, H = 130;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
   const max = Math.max(...values, 1);
-  const barW = (W - 40) / labels.length * 0.6;
-  const gap   = (W - 40) / labels.length;
-  ctx.fillStyle = '#1e293b';
-  ctx.fillRect(0,0,W,H);
-  labels.forEach((lbl,i)=>{
-    const x = 20 + i*gap + gap*0.2;
-    const bh = ((values[i]||0)/max)*(H-30);
-    const y = H - 20 - bh;
-    ctx.fillStyle = colors[i] || '#3b82f6';
+  const n = labels.length;
+  const barW = Math.max(4, (W-40)/n * 0.55);
+  const step  = (W-40)/n;
+  ctx.fillStyle = '#0b0b0b'; ctx.fillRect(0,0,W,H);
+  labels.forEach((lbl,i) => {
+    const x  = 20 + i*step + step*0.22;
+    const bh = ((values[i]||0)/max) * (H-30);
+    const y  = H - 20 - bh;
+    ctx.fillStyle = colors[i] || C.open;
     ctx.beginPath();
-    ctx.roundRect(x, y, barW, bh, 3);
+    if (ctx.roundRect) ctx.roundRect(x, y, barW, bh, 2);
+    else ctx.rect(x, y, barW, bh);
     ctx.fill();
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '10px monospace';
+    ctx.fillStyle = '#555'; ctx.font = '9px JetBrains Mono, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(lbl, x+barW/2, H-5);
+    ctx.fillText(String(lbl), x+barW/2, H-5);
     if (values[i]) {
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillText(values[i], x+barW/2, y-3);
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillText(String(values[i]), x+barW/2, y-3);
     }
   });
 }
 
-// State chart
-drawDonut('stateChart', 'stateLegend', [
-  {label:'Open',     value:{{ session.open_ports_count }},     color:COLORS.open},
-  {label:'Closed',   value:{{ session.closed_ports_count }},   color:COLORS.closed},
-  {label:'Filtered', value:{{ session.filtered_ports_count }}, color:COLORS.filtered},
+drawDonut('stateChart','stateLeg',[
+  {label:'Open',     v:{{ session.open_ports_count }},     c:C.open},
+  {label:'Closed',   v:{{ session.closed_ports_count }},   c:C.closed},
+  {label:'Filtered', v:{{ session.filtered_ports_count }}, c:C.filtered},
+]);
+drawDonut('riskChart','riskLeg',[
+  {label:'Critical', v:{{ risk_breakdown.critical }}, c:C.critical},
+  {label:'High',     v:{{ risk_breakdown.high }},     c:C.high},
+  {label:'Medium',   v:{{ risk_breakdown.medium }},   c:C.medium},
+  {label:'Low',      v:{{ risk_breakdown.low }},      c:C.low},
+  {label:'Info',     v:{{ risk_breakdown.info }},     c:C.info},
 ]);
 
-// Risk chart
-drawDonut('riskChart', 'riskLegend', [
-  {label:'Critical', value:{{ risk_breakdown.critical }}, color:COLORS.critical},
-  {label:'High',     value:{{ risk_breakdown.high }},     color:COLORS.high},
-  {label:'Medium',   value:{{ risk_breakdown.medium }},   color:COLORS.medium},
-  {label:'Low',      value:{{ risk_breakdown.low }},      color:COLORS.low},
-  {label:'Info',     value:{{ risk_breakdown.info }},     color:COLORS.info},
-]);
-
-// Response time bar chart
 const portList = [
   {% for p in open_ports %}{% if p.response_time_ms %}
   {port:{{ p.port }}, ms:{{ p.response_time_ms }}, risk:"{{ p.risk_level }}"},
@@ -307,11 +269,7 @@ const portList = [
 ];
 const sorted = portList.sort((a,b)=>a.ms-b.ms).slice(0,20);
 if (sorted.length) {
-  drawBar('responseChart',
-    sorted.map(p=>p.port),
-    sorted.map(p=>p.ms),
-    sorted.map(p=>COLORS[p.risk]||COLORS.open)
-  );
+  drawBar('barChart', sorted.map(p=>p.port), sorted.map(p=>Math.round(p.ms)), sorted.map(p=>C[p.risk]||C.open));
 }
 </script>
 {% endblock %}
