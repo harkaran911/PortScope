@@ -82,12 +82,12 @@ class ScanSession(models.Model):
     @property
     def risk_color(self):
         if self.risk_score >= 7:
-            return "danger"
+            return "critical"
         elif self.risk_score >= 5:
-            return "warning"
+            return "high"
         elif self.risk_score >= 3:
-            return "info"
-        return "success"
+            return "medium"
+        return "low"
 
 
 class PortResult(models.Model):

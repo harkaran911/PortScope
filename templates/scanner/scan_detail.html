@@ -1,47 +1,42 @@
 {% extends "scanner/base.html" %}
-{% block title %}Scan — {{ session.target }}{% endblock %}
-{% block nav_history %}active{% endblock %}
+{% block title %}{{ session.target }}{% endblock %}
+{% block nav_hist %}active{% endblock %}
+{% block nav_hist_dot %}<span class="nav-active-dot"></span>{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'index' %}" class="breadcrumb-item">Dashboard</a>
 <span class="breadcrumb-sep">›</span>
 <a href="{% url 'history' %}" class="breadcrumb-item">History</a>
 <span class="breadcrumb-sep">›</span>
-<span class="breadcrumb-item active">{{ session.target }}</span>
+<span class="breadcrumb-item active mono">{{ session.target }}</span>
 {% endblock %}
 
 {% block content %}
 
-<!-- ── Scan header ────────────────────────────────────────────────────────── -->
-<div class="scan-header-card">
-  <div class="scan-header-main">
-    <div class="scan-target-block">
-      <div class="scan-target-name">{{ session.target }}</div>
-      {% if session.resolved_ip and session.resolved_ip != session.target %}
-      <div class="scan-target-ip">{{ session.resolved_ip }}</div>
-      {% endif %}
-      {% if session.hostname and session.hostname != session.target %}
-      <div class="scan-target-host">{{ session.hostname }}</div>
-      {% endif %}
-    </div>
-    <div class="scan-meta-chips">
-      <span class="chip">{{ session.get_scan_type_display }}</span>
-      <span class="chip status-{{ session.status }}">
-        {% if session.status == "running" %}<span class="pulse-dot"></span>{% endif %}
+<!-- Scan header -->
+<div class="scan-head">
+  <div>
+    <div class="scan-target-name">{{ session.target }}</div>
+    {% if session.resolved_ip and session.resolved_ip != session.target %}
+    <div class="scan-target-ip">{{ session.resolved_ip }}</div>
+    {% endif %}
+    <div class="scan-chips">
+      <span class="scan-chip">{{ session.get_scan_type_display }}</span>
+      <span class="scan-chip {% if session.status == 'running' %}active{% endif %}">
+        {% if session.status == "running" %}<span class="pulse"></span>{% endif %}
         {{ session.status|title }}
       </span>
       {% if session.duration_seconds %}
-      <span class="chip">{{ session.duration_seconds|floatformat:1 }}s</span>
+      <span class="scan-chip mono">{{ session.duration_seconds|floatformat:1 }}s</span>
       {% endif %}
-      <span class="chip">{{ session.created_at|date:"M d, Y H:i" }}</span>
+      <span class="scan-chip mono dim">{{ session.created_at|date:"M d, Y H:i" }}</span>
     </div>
   </div>
-
-  <div class="scan-header-actions">
+  <div class="scan-head-actions">
     {% if session.status == "completed" %}
     <a href="{% url 'report' session.pk %}" class="btn btn-primary btn-sm">
-      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
-      Full Report
+      <svg viewBox="0 0 14 14" fill="currentColor"><path d="M3 2a1 1 0 011-1h3.586A1 1 0 019 1.293L11.707 4A1 1 0 0112 4.707V11a1 1 0 01-1 1H4a1 1 0 01-1-1V2z"/></svg>
+      Report
     </a>
     <a href="{% url 'export_json' session.pk %}" class="btn btn-ghost btn-sm">JSON</a>
     <a href="{% url 'export_csv' session.pk %}"  class="btn btn-ghost btn-sm">CSV</a>
@@ -50,107 +45,92 @@
   </div>
 </div>
 
-<!-- ── Live progress (running) ────────────────────────────────────────────── -->
+<!-- Live progress (when running) -->
 {% if session.status == "running" or session.status == "pending" %}
-<div id="liveCard" class="card">
-  <div class="card-header"><h2 class="card-title">Live Progress</h2></div>
-  <div class="live-progress-body">
-    <div class="progress-track large">
-      <div class="progress-fill" id="liveFill" style="width: {{ session.progress }}%"></div>
-      <div class="progress-glow"></div>
+<div class="card" id="liveCard">
+  <div class="card-head"><div class="card-title">Scanning…</div></div>
+  <div class="live-body">
+    <div class="progress-track lg" style="width:100%;">
+      <div class="progress-bar" id="liveFill" style="width:{{ session.progress }}%"></div>
     </div>
-    <div class="live-stats">
-      <div class="ls-item"><span id="liveOpen">{{ session.open_ports_count }}</span><label>Open</label></div>
-      <div class="ls-item"><span id="liveClosed">{{ session.closed_ports_count }}</span><label>Closed</label></div>
-      <div class="ls-item"><span id="liveFiltered">{{ session.filtered_ports_count }}</span><label>Filtered</label></div>
-      <div class="ls-item"><span id="livePct">{{ session.progress }}</span><label>%</label></div>
+    <div class="live-nums">
+      <div class="live-num-item"><span id="liveOpen">{{ session.open_ports_count }}</span><label>Open</label></div>
+      <div class="live-num-item"><span id="liveClosed">{{ session.closed_ports_count }}</span><label>Closed</label></div>
+      <div class="live-num-item"><span id="liveFiltered">{{ session.filtered_ports_count }}</span><label>Filtered</label></div>
+      <div class="live-num-item"><span id="livePct">{{ session.progress }}</span><label>%</label></div>
     </div>
-    <div class="scan-radar small">
-      <div class="radar-ring r1"></div><div class="radar-ring r2"></div><div class="radar-ring r3"></div>
-      <div class="radar-sweep"></div><div class="radar-center"></div>
+    <div class="radar sm">
+      <div class="r-ring"></div><div class="r-ring"></div><div class="r-ring"></div>
+      <div class="r-sweep"></div><div class="r-center"></div>
     </div>
   </div>
 </div>
 {% endif %}
 
-<!-- ── Risk overview ──────────────────────────────────────────────────────── -->
-<div class="overview-grid">
-  <div class="metric-card">
-    <div class="metric-label">Open Ports</div>
-    <div class="metric-value accent">{{ session.open_ports_count }}</div>
+<!-- Overview metrics -->
+<div class="overview-row">
+  <div class="overview-card">
+    <div class="ov-label">Open Ports</div>
+    <div class="ov-value accent">{{ session.open_ports_count }}</div>
   </div>
-  <div class="metric-card">
-    <div class="metric-label">Closed / Filtered</div>
-    <div class="metric-value dim">{{ session.closed_ports_count }} / {{ session.filtered_ports_count }}</div>
+  <div class="overview-card">
+    <div class="ov-label">Closed / Filtered</div>
+    <div class="ov-value">{{ session.closed_ports_count }}<span style="font-size:16px;color:var(--text-muted);font-weight:400"> / </span>{{ session.filtered_ports_count }}</div>
   </div>
-  <div class="metric-card risk-metric risk-{{ session.risk_color }}">
-    <div class="metric-label">Risk Score</div>
-    <div class="metric-value">{{ session.risk_score|floatformat:1 }}<span class="metric-sub">/9</span></div>
-    <div class="metric-badge">{{ session.risk_label }}</div>
+  <div class="overview-card ov-risk-{{ session.risk_color|default:'none' }}">
+    <div class="ov-label">Risk Score</div>
+    <div class="ov-value">{{ session.risk_score|floatformat:1 }}<span style="font-size:14px;color:var(--text-muted);font-weight:400;letter-spacing:0"> /9</span></div>
+    <div class="ov-sub"><span class="ov-badge"><span class="badge badge-{{ session.risk_color|default:'none' }}">{{ session.risk_label }}</span></span></div>
   </div>
-  <div class="metric-card">
-    <div class="metric-label">Risk Breakdown</div>
-    <div class="risk-bar-stack">
+  <div class="overview-card">
+    <div class="ov-label">Risk Breakdown</div>
+    <div class="risk-bar">
       {% with rb=risk_breakdown %}
-      {% if rb.critical %}<div class="rb-seg critical" style="flex:{{ rb.critical }}" title="Critical: {{ rb.critical }}"></div>{% endif %}
-      {% if rb.high    %}<div class="rb-seg high"     style="flex:{{ rb.high }}"     title="High: {{ rb.high }}"></div>{% endif %}
-      {% if rb.medium  %}<div class="rb-seg medium"   style="flex:{{ rb.medium }}"   title="Medium: {{ rb.medium }}"></div>{% endif %}
-      {% if rb.low     %}<div class="rb-seg low"      style="flex:{{ rb.low }}"      title="Low: {{ rb.low }}"></div>{% endif %}
-      {% if rb.info    %}<div class="rb-seg info"     style="flex:{{ rb.info }}"     title="Info: {{ rb.info }}"></div>{% endif %}
+      {% if rb.critical %}<div class="rb critical" style="flex:{{ rb.critical }}" title="Critical: {{ rb.critical }}"></div>{% endif %}
+      {% if rb.high    %}<div class="rb high"     style="flex:{{ rb.high }}"     title="High: {{ rb.high }}"></div>{% endif %}
+      {% if rb.medium  %}<div class="rb medium"   style="flex:{{ rb.medium }}"   title="Medium: {{ rb.medium }}"></div>{% endif %}
+      {% if rb.low     %}<div class="rb low"      style="flex:{{ rb.low }}"      title="Low: {{ rb.low }}"></div>{% endif %}
+      {% if rb.info    %}<div class="rb info"     style="flex:{{ rb.info }}"     title="Info: {{ rb.info }}"></div>{% endif %}
       {% endwith %}
     </div>
     <div class="rb-legend">
-      <span><i class="dot critical"></i>C:{{ risk_breakdown.critical }}</span>
-      <span><i class="dot high"></i>H:{{ risk_breakdown.high }}</span>
-      <span><i class="dot medium"></i>M:{{ risk_breakdown.medium }}</span>
-      <span><i class="dot low"></i>L:{{ risk_breakdown.low }}</span>
+      <span class="rb-item"><i class="rbl-dot" style="background:var(--risk-c-text)"></i>C:{{ risk_breakdown.critical }}</span>
+      <span class="rb-item"><i class="rbl-dot" style="background:var(--risk-h-text)"></i>H:{{ risk_breakdown.high }}</span>
+      <span class="rb-item"><i class="rbl-dot" style="background:var(--risk-m-text)"></i>M:{{ risk_breakdown.medium }}</span>
+      <span class="rb-item"><i class="rbl-dot" style="background:var(--risk-l-text)"></i>L:{{ risk_breakdown.low }}</span>
     </div>
   </div>
 </div>
 
-<!-- ── DNS / Host info ────────────────────────────────────────────────────── -->
+<!-- DNS / Host info -->
 {% if dns_info %}
 <div class="card">
-  <div class="card-header"><h2 class="card-title">Host &amp; DNS Information</h2></div>
+  <div class="card-head"><div class="card-title">Host &amp; DNS</div></div>
   <div class="info-grid">
-    <div class="info-item">
-      <span class="info-label">Resolved IP</span>
-      <span class="info-value mono">{{ session.resolved_ip|default:"—" }}</span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Hostname</span>
-      <span class="info-value mono">{{ session.hostname|default:"—" }}</span>
-    </div>
+    <div class="info-item"><div class="info-lbl">Resolved IP</div><div class="info-val">{{ session.resolved_ip|default:"—" }}</div></div>
+    <div class="info-item"><div class="info-lbl">Hostname</div><div class="info-val">{{ session.hostname|default:"—" }}</div></div>
     {% if dns_info.ptr %}
-    <div class="info-item">
-      <span class="info-label">PTR Record</span>
-      <span class="info-value mono">{{ dns_info.ptr }}</span>
-    </div>
+    <div class="info-item"><div class="info-lbl">PTR Record</div><div class="info-val">{{ dns_info.ptr }}</div></div>
     {% endif %}
     {% if dns_info.a %}
-    <div class="info-item">
-      <span class="info-label">A Records</span>
-      <span class="info-value mono">{{ dns_info.a|join:", " }}</span>
-    </div>
+    <div class="info-item"><div class="info-lbl">A Records</div><div class="info-val">{{ dns_info.a|join:", " }}</div></div>
     {% endif %}
     {% if dns_info.aliases %}
-    <div class="info-item">
-      <span class="info-label">Aliases</span>
-      <span class="info-value mono">{{ dns_info.aliases|join:", " }}</span>
-    </div>
+    <div class="info-item"><div class="info-lbl">Aliases</div><div class="info-val">{{ dns_info.aliases|join:", " }}</div></div>
     {% endif %}
   </div>
 </div>
 {% endif %}
 
-<!-- ── Open ports table ───────────────────────────────────────────────────── -->
-<div class="card" id="portsCard">
-  <div class="card-header">
-    <h2 class="card-title">Open Ports
+<!-- Open ports -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">
+      Open Ports
       <span class="count-badge" id="portCount">{{ open_ports|length }}</span>
-    </h2>
+    </div>
     <div class="filter-bar">
-      <input type="text" id="portFilter" class="filter-input" placeholder="Filter ports, services…" />
+      <input type="text" id="portFilter" class="filter-input" placeholder="Filter port, service…" />
       <select id="riskFilter" class="filter-select">
         <option value="">All Risk</option>
         <option value="critical">Critical</option>
@@ -164,7 +144,7 @@
 
   {% if open_ports %}
   <div class="table-wrap">
-    <table class="data-table ports-table" id="portsTable">
+    <table id="portsTable">
       <thead>
         <tr>
           <th>Port</th>
@@ -178,65 +158,45 @@
       </thead>
       <tbody>
         {% for port in open_ports %}
-        <tr class="table-row port-row" data-risk="{{ port.risk_level }}" data-port="{{ port.port }}" data-service="{{ port.service|lower }}">
+        <tr class="port-row risk-{{ port.risk_level }}" data-risk="{{ port.risk_level }}" data-port="{{ port.port }}" data-svc="{{ port.service|lower }}">
           <td>
-            <div class="port-cell">
-              <span class="port-number">{{ port.port }}</span>
-              <span class="port-proto">{{ port.protocol|upper }}</span>
-            </div>
+            <div class="port-num">{{ port.port }}</div>
+            <span class="port-proto">{{ port.protocol }}</span>
           </td>
           <td>
             <div class="service-cell">
-              <span class="service-name">{{ port.service }}</span>
-              {% if port.http_title %}
-              <span class="service-title">{{ port.http_title }}</span>
-              {% endif %}
+              <span class="svc-name">{{ port.service }}</span>
+              {% if port.http_title %}<span class="svc-title">{{ port.http_title|truncatechars:40 }}</span>{% endif %}
             </div>
           </td>
-          <td class="version-cell mono">
-            {% if port.version %}
-              {{ port.version|truncatechars:80 }}
-            {% elif port.banner %}
-              {{ port.banner|truncatechars:80 }}
-            {% else %}
-              <span class="dim">—</span>
-            {% endif %}
-          </td>
           <td>
-            <span class="risk-badge risk-{{ port.risk_level }}">{{ port.risk_level|title }}</span>
+            <span class="version-text">
+              {% if port.version %}{{ port.version|truncatechars:60 }}{% elif port.banner %}{{ port.banner|truncatechars:60 }}{% else %}<span class="dim">—</span>{% endif %}
+            </span>
           </td>
-          <td class="mono dim">
-            {% if port.response_time_ms %}{{ port.response_time_ms }}ms{% else %}—{% endif %}
-          </td>
-          <td class="notes-cell dim">{{ port.risk_notes|truncatechars:60 }}</td>
-          <td>
-            <button class="btn btn-sm btn-ghost" onclick="showPortDetail({{ port.pk }})">Details</button>
-          </td>
+          <td><span class="badge badge-{{ port.risk_level }}">{{ port.risk_level }}</span></td>
+          <td><span class="resp-ms">{% if port.response_time_ms %}{{ port.response_time_ms }}ms{% else %}—{% endif %}</span></td>
+          <td class="muted" style="font-size:11.5px;max-width:180px;">{{ port.risk_notes|truncatechars:55 }}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="showDetail({{ port.pk }})">Details</button></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% else %}
-    {% if session.status == "completed" %}
-    <div class="empty-state">
-      <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2" opacity=".3"/><path d="M20 32h24M32 20v24" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"/></svg>
-      <p>No open ports found on this target.</p>
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <p>Waiting for scan results…</p>
-    </div>
-    {% endif %}
+  <div class="empty-state">
+    <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="24" x2="32" y2="24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="24" y1="16" x2="24" y2="32" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <p>{% if session.status == "completed" %}No open ports found on this target.{% else %}Waiting for scan results…{% endif %}</p>
+  </div>
   {% endif %}
 </div>
 
-<!-- ── Port Detail Modal ──────────────────────────────────────────────────── -->
-<div id="portModal" class="modal-backdrop" style="display:none;" onclick="closeModal(event)">
+<!-- Port detail modal -->
+<div id="portModal" class="modal-bg" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal-box">
     <button class="modal-close" onclick="document.getElementById('portModal').style.display='none'">&times;</button>
-    <h3 class="modal-title" id="modalTitle">Port Details</h3>
-    <div id="modalBody" class="modal-body"></div>
+    <div class="modal-title" id="modalTitle">Port Details</div>
+    <div id="modalBody"></div>
   </div>
 </div>
 
@@ -254,93 +214,89 @@
     document.getElementById('liveClosed').textContent = d.closed;
     document.getElementById('liveFiltered').textContent = d.filtered;
     document.getElementById('livePct').textContent = d.progress;
-    if (d.status === 'completed' || d.status === 'failed') {
-      window.location.reload();
-    } else {
-      poll();
-    }
+    if (d.status === 'completed' || d.status === 'failed') window.location.reload();
+    else poll();
   }, 1000);
 })();
 {% endif %}
 
-// Filter
+// Filtering
 const portFilter = document.getElementById('portFilter');
 const riskFilter = document.getElementById('riskFilter');
 function applyFilters() {
-  const text = portFilter.value.toLowerCase();
-  const risk = riskFilter.value;
-  const rows = document.querySelectorAll('#portsTable .port-row');
-  let visible = 0;
-  rows.forEach(row => {
-    const portMatch = row.dataset.port.includes(text) || row.dataset.service.includes(text) || row.textContent.toLowerCase().includes(text);
-    const riskMatch = !risk || row.dataset.risk === risk;
-    const show = portMatch && riskMatch;
+  const txt  = portFilter ? portFilter.value.toLowerCase() : '';
+  const risk = riskFilter ? riskFilter.value : '';
+  let vis = 0;
+  document.querySelectorAll('#portsTable .port-row').forEach(row => {
+    const tm = row.dataset.port.includes(txt) || row.dataset.svc.includes(txt) || row.textContent.toLowerCase().includes(txt);
+    const rm = !risk || row.dataset.risk === risk;
+    const show = tm && rm;
     row.style.display = show ? '' : 'none';
-    if (show) visible++;
+    if (show) vis++;
   });
-  document.getElementById('portCount').textContent = visible;
+  const cb = document.getElementById('portCount');
+  if (cb) cb.textContent = vis;
 }
 if (portFilter) portFilter.addEventListener('input', applyFilters);
 if (riskFilter) riskFilter.addEventListener('change', applyFilters);
 
-// Port detail modal
+// Port data map
 const portData = {};
 {% for port in open_ports %}
 portData[{{ port.pk }}] = {
   port: {{ port.port }},
-  protocol: "{{ port.protocol|upper }}",
+  proto: "{{ port.protocol|upper }}",
   service: "{{ port.service|escapejs }}",
   version: "{{ port.version|escapejs }}",
-  banner: {{ port.banner|default:""|escapejs|json_script:"" }},
+  banner: "{{ port.banner|escapejs }}",
   risk: "{{ port.risk_level }}",
   notes: "{{ port.risk_notes|escapejs }}",
-  http_title: "{{ port.http_title|escapejs }}",
-  response_ms: {{ port.response_time_ms|default:"null" }},
+  title: "{{ port.http_title|escapejs }}",
+  ms: {{ port.response_time_ms|default:"null" }},
   cves: {{ port.cve_hints|default:"[]" }},
   ssl: {{ port.ssl_info|default:"{}" }},
 };
 {% endfor %}
 
-function showPortDetail(id) {
+function showDetail(id) {
   const p = portData[id];
   if (!p) return;
-  document.getElementById('modalTitle').textContent = `Port ${p.port}/${p.protocol} — ${p.service}`;
-  let cves = '';
-  try { const c = JSON.parse(p.cves); if(c.length) cves = c.map(x=>`<li>${x}</li>`).join(''); } catch(e){}
-  let ssl = '';
+  document.getElementById('modalTitle').textContent = `${p.port}/${p.proto} — ${p.service}`;
+
+  let cveHtml = '';
+  try {
+    const c = typeof p.cves === 'string' ? JSON.parse(p.cves) : p.cves;
+    if (c && c.length) cveHtml = `<div class="modal-section"><div class="modal-section-label">Known CVEs / Risks</div><div class="cve-list">${c.map(x=>`<div class="cve-item">${x}</div>`).join('')}</div></div>`;
+  } catch(e){}
+
+  let sslHtml = '';
   try {
     const s = typeof p.ssl === 'string' ? JSON.parse(p.ssl) : p.ssl;
-    if (s && s.version) {
-      ssl = `<div class="detail-section"><h4>TLS/SSL</h4><div class="info-grid">
-        <div class="info-item"><span class="info-label">Version</span><span class="info-value mono">${s.version||'—'}</span></div>
-        <div class="info-item"><span class="info-label">Cipher</span><span class="info-value mono">${s.cipher||'—'}</span></div>
-        <div class="info-item"><span class="info-label">Expires</span><span class="info-value mono ${s.expired?'text-danger':''}">${s.not_after||'—'}${s.expired?' (EXPIRED)':''}</span></div>
-        ${s.san ? `<div class="info-item"><span class="info-label">SANs</span><span class="info-value mono">${s.san.join(', ')}</span></div>` : ''}
-      </div></div>`;
-    }
+    if (s && s.version) sslHtml = `<div class="modal-section"><div class="modal-section-label">TLS / SSL</div><div class="detail-grid">
+      <div class="detail-item"><div class="detail-lbl">Version</div><div class="detail-val">${s.version||'—'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">Cipher</div><div class="detail-val">${s.cipher||'—'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">Expires</div><div class="detail-val" style="${s.expired?'color:var(--risk-c-text)':''}">${s.not_after||'—'}${s.expired?' ⚠ EXPIRED':''}</div></div>
+      ${s.san ? `<div class="detail-item"><div class="detail-lbl">SANs</div><div class="detail-val">${s.san.slice(0,4).join(', ')}</div></div>` : ''}
+    </div></div>`;
   } catch(e){}
+
   document.getElementById('modalBody').innerHTML = `
     <div class="detail-grid">
-      <div class="info-item"><span class="info-label">State</span><span class="info-value"><span class="risk-badge risk-low">open</span></span></div>
-      <div class="info-item"><span class="info-label">Risk</span><span class="info-value"><span class="risk-badge risk-${p.risk}">${p.risk}</span></span></div>
-      <div class="info-item"><span class="info-label">Response</span><span class="info-value mono">${p.response_ms ? p.response_ms+'ms' : '—'}</span></div>
-      ${p.http_title ? `<div class="info-item"><span class="info-label">HTTP Title</span><span class="info-value">${p.http_title}</span></div>` : ''}
+      <div class="detail-item"><div class="detail-lbl">Risk</div><div class="detail-val"><span class="badge badge-${p.risk}">${p.risk}</span></div></div>
+      <div class="detail-item"><div class="detail-lbl">Response</div><div class="detail-val">${p.ms ? p.ms+'ms' : '—'}</div></div>
+      ${p.title ? `<div class="detail-item"><div class="detail-lbl">HTTP Title</div><div class="detail-val">${p.title}</div></div>` : ''}
     </div>
-    ${p.notes ? `<div class="detail-notes">${p.notes}</div>` : ''}
-    ${p.version ? `<div class="detail-section"><h4>Version / Banner</h4><pre class="code-block">${p.version}</pre></div>` : ''}
-    ${ssl}
-    ${cves ? `<div class="detail-section"><h4>Known CVEs / Risks</h4><ul class="cve-list">${cves}</ul></div>` : ''}
+    ${p.notes ? `<div class="modal-section"><div class="modal-section-label">Notes</div><div style="font-size:13px;color:var(--text-muted);padding:10px 0;">${p.notes}</div></div>` : ''}
+    ${(p.version || p.banner) ? `<div class="modal-section"><div class="modal-section-label">Version / Banner</div><div class="code-block">${p.version || p.banner}</div></div>` : ''}
+    ${sslHtml}
+    ${cveHtml}
   `;
   document.getElementById('portModal').style.display = 'flex';
 }
 
-function closeModal(e) {
-  if (e.target.id === 'portModal') document.getElementById('portModal').style.display = 'none';
-}
-
 function confirmDelete(id) {
-  if (!confirm('Delete this scan? This cannot be undone.')) return;
-  fetch(`/scan/${id}/delete/`, {method:'POST', headers:{'X-CSRFToken': getCsrf()}})
+  if (!confirm('Delete this scan permanently?')) return;
+  fetch(`/scan/${id}/delete/`, { method: 'POST', headers: { 'X-CSRFToken': getCsrf() } })
     .then(() => window.location.href = '/');
 }
 function getCsrf() {
